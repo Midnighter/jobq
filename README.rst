@@ -7,13 +7,10 @@ Outline
 -------
 
 This package provides 3 modules:
-
 1. A collection of Python scripts that supply a beanstalkd_ queue with job
 definitions.
-2. An example of using IPython kernels to consume the queue and run the jobs.
-   Results are then submitted to a special results tube.
-3. A manager class that watches the results tube and writes results to various
-   databases.
+2. An example of using IPython kernels to consume the queue and run the jobs.  Results are then submitted to a special results tube.
+3. A manager class that watches the results tube and writes results to various databases.
 
 .. _beanstalkd: https://github.com/kr/beanstalkd
 
