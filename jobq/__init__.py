@@ -19,4 +19,7 @@ Job Queue Application
 """
 
 
+from suppliers import *
+from consumers import *
+from handlers import *
 

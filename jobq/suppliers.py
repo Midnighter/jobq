@@ -19,7 +19,7 @@ Job Queue Suppliers
 """
 
 
-__all__ = ["DirectoryWatcher"]
+__all__ = ["DirectoryWatcher", "watch_input"]
 
 
 import os
@@ -58,7 +58,7 @@ class DirectoryWatcher(threading.Thread):
 
         Notes
         -----
-        The dispatcher is intended to interpret the file contents and put that
+        The dispatcher is intended to interpret the file contents and put them
         into a queue.
 
         Warning
@@ -69,22 +69,33 @@ class DirectoryWatcher(threading.Thread):
         super(DirectoryWatcher, self).__init__(**kw_args)
         dir_path = os.path.abspath(dir_path)
         if not os.path.exists(dir_path):
-            raise OSError("directory to watch does not exist")
+            raise OSError("directory '%s' does not exist" % (dir_path,))
         self.path = os.path.join(dir_path, glob_pattern)
         self.dispatch = dispatcher
         self.cache = set()
         self.wait = float(wait)
+        self._stop = threading.Event()
+
+    def stop(self):
+        self._stop.set()
+
+    def stopped(self):
+        return self._stop.is_set()
 
     def run(self):
         while True:
             try:
-                files = self.cache.difference(set(glob(self.path)))
+                files = set(glob(self.path)).difference(self.cache)
                 self.cache.update(files)
                 for filename in files:
+                    LOGGER.debug("found file '%s'", filename)
                     self.dispatch(filename)
                 time.sleep(self.wait)
             except Exception as err:
                 LOGGER.error(str(err))
+            if self.stopped():
+                LOGGER.info("shutting down")
+                break
 
 
 def watch_input(dispatcher, mode="rb", encoding="utf-8"):

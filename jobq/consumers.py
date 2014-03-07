@@ -29,7 +29,7 @@ import cPickle as pickle
 LOGGER = logging.getLogger(__name__)
 
 
-def generic_consumer(worker, queue, sentinel):
+def generic_consumer(queue, worker, sentinel):
     """
     Parameters
     ----------
@@ -55,19 +55,25 @@ def generic_consumer(worker, queue, sentinel):
         try:
             job = queue.reserve()
             obj = pickle.loads(job.body)
-        except (pickle.UnpicklingError, StandardError) as err:
+        except (pickle.UnpicklingError, Exception) as err:
             LOGGER.error(str(err))
             job.bury()
+        except (KeyboardInterrupt, SystemExit):
+            LOGGER.info("shutting down")
+            raise StopIteration
         if obj == sentinel: # real sentinel
             raise StopIteration
         return (job, obj)
 
-    for (job, obj) in iter(queue.reserve, sentinel): # bogus sentinel but intended
+    for (job, obj) in iter(consume, sentinel): # bogus sentinel but intended
         try:
-            result = worker(obj)
-        except StandardError as err:
+            result = worker(**obj)
+        except Exception as err:
             LOGGER.error(str(err))
             job.bury()
+        except (KeyboardInterrupt, SystemExit):
+            LOGGER.info("shutting down")
+            job.release()
         else:
             queue.put(pickle.dumps(result))
             job.delete()

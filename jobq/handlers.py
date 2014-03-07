@@ -19,7 +19,7 @@ Job Queue Result Manager
 """
 
 
-__all__ = ["generic_manager"]
+__all__ = ["generic_handler"]
 
 
 import logging
@@ -29,7 +29,7 @@ import cPickle as pickle
 LOGGER = logging.getLogger(__name__)
 
 
-def generic_manager(handler, queue, sentinel):
+def generic_handler(queue, handler):
     """
     Warning
     -------
@@ -39,9 +39,12 @@ def generic_manager(handler, queue, sentinel):
         try:
             job = queue.reserve()
             handler(pickle.loads(job.body))
-        except StandardError as err:
+        except Exception as err:
             LOGGER.error(str(err))
             job.bury()
+        except (KeyboardInterrupt, SystemExit):
+            LOGGER.info("shutting down")
+            break
         else:
             job.delete()
 
